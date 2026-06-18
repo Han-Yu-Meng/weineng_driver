@@ -333,6 +333,7 @@ inline void DecoderRSAIRY<T_PointCloud>::decodeImuPkt(const uint8_t* packet, siz
 template <typename T_PointCloud>
 inline void DecoderRSAIRY<T_PointCloud>::decodeDifopPkt(const uint8_t* packet, size_t size)
 {
+  static bool difop_logged = false;
   const RSAIRYDifopPkt& pkt = *(const RSAIRYDifopPkt*)(packet);
   this->template decodeDifopCommon<RSAIRYDifopPkt>(pkt);
 
@@ -363,6 +364,24 @@ inline void DecoderRSAIRY<T_PointCloud>::decodeDifopPkt(const uint8_t* packet, s
   {
     this->install_mode_ = (uint16_t)(pkt.install_mode);
     this->loaded_install_info_ = true;
+  }
+
+  if (!difop_logged)
+  {
+    RS_INFO << std::fixed << std::setprecision(6)
+            << "[RSAIRY DIFOP] q=("
+            << this->device_info_.qx << ", "
+            << this->device_info_.qy << ", "
+            << this->device_info_.qz << ", "
+            << this->device_info_.qw << "), t=("
+            << this->device_info_.x << ", "
+            << this->device_info_.y << ", "
+            << this->device_info_.z << "), rpy_deg=("
+            << convertUint32ToFloat(ntohl(pkt.roll)) << ", "
+            << convertUint32ToFloat(ntohl(pkt.pitch)) << ", "
+            << convertUint32ToFloat(ntohl(pkt.yaw)) << "), install_mode="
+            << (uint16_t)(pkt.install_mode) << RS_REND;
+    difop_logged = true;
   }
 }
 
