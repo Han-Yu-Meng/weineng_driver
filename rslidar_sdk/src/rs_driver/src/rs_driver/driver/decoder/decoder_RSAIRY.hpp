@@ -368,19 +368,40 @@ inline void DecoderRSAIRY<T_PointCloud>::decodeDifopPkt(const uint8_t* packet, s
 
   if (!difop_logged)
   {
+    float qx = this->device_info_.qx;
+    float qy = this->device_info_.qy;
+    float qz = this->device_info_.qz;
+    float qw = this->device_info_.qw;
+    float tx = this->device_info_.x;
+    float ty = this->device_info_.y;
+    float tz = this->device_info_.z;
+
+    // Convert quaternion to rotation matrix (row-major)
+    float r00 = 1.0f - 2.0f * (qy * qy + qz * qz);
+    float r01 = 2.0f * (qx * qy - qw * qz);
+    float r02 = 2.0f * (qx * qz + qw * qy);
+    float r10 = 2.0f * (qx * qy + qw * qz);
+    float r11 = 1.0f - 2.0f * (qx * qx + qz * qz);
+    float r12 = 2.0f * (qy * qz - qw * qx);
+    float r20 = 2.0f * (qx * qz - qw * qy);
+    float r21 = 2.0f * (qy * qz + qw * qx);
+    float r22 = 1.0f - 2.0f * (qx * qx + qy * qy);
+
     RS_INFO << std::fixed << std::setprecision(6)
-            << "[RSAIRY DIFOP] q=("
-            << this->device_info_.qx << ", "
-            << this->device_info_.qy << ", "
-            << this->device_info_.qz << ", "
-            << this->device_info_.qw << "), t=("
-            << this->device_info_.x << ", "
-            << this->device_info_.y << ", "
-            << this->device_info_.z << "), rpy_deg=("
-            << convertUint32ToFloat(ntohl(pkt.roll)) << ", "
-            << convertUint32ToFloat(ntohl(pkt.pitch)) << ", "
-            << convertUint32ToFloat(ntohl(pkt.yaw)) << "), install_mode="
-            << (uint16_t)(pkt.install_mode) << RS_REND;
+            << "\n==================================================" << "\n"
+            << "--- 成功提取并转换外参 (Fast-LIO 格式) ---" << "\n"
+            << "==================================================" << "\n"
+            << "# 原始四元数: x=" << qx << ", y=" << qy << ", z=" << qz << ", w=" << qw << "\n"
+            << "# 原始平移: x=" << tx << ", y=" << ty << ", z=" << tz << "\n"
+            << "# 直接复制以下内容到 Fast-LIO YAML 文件:" << "\n"
+            << "------------------------------" << "\n"
+            << "extrinsic_T: [" << tx << ", " << ty << ", " << tz << "]" << "\n"
+            << std::setprecision(8)
+            << "extrinsic_R: [" << r00 << ", " << r01 << ", " << r02 << "," << "\n"
+            << "              " << r10 << ", " << r11 << ", " << r12 << "," << "\n"
+            << "              " << r20 << ", " << r21 << ", " << r22 << "]" << "\n"
+            << "------------------------------"
+            << RS_REND;
     difop_logged = true;
   }
 }
